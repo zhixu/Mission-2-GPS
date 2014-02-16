@@ -48,7 +48,7 @@ function initialize() {
   points = new Array();
   
 }
-
+	
 function codeAddress() {
   var address = document.getElementById('address').value;
   geocoder.geocode( { 'address': address}, function(results, status) {
@@ -78,9 +78,11 @@ function codeAddress() {
 }
 
 function loadForm() {
-	$("#content").load("form.html");
+	$("#content").load("form.html", function() {
+		alert( "Load was called..." );
+		});
 }
-
+	
 function closeInfowindow() {
 	currentPoint.infowindow.close();
 }
