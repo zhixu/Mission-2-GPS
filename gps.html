@@ -4,12 +4,18 @@
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
     <meta charset="utf-8">
     <title>Art 178: Mission 2</title>
+
     <style>
       html, body, #map-canvas {
         height: 100%;
         margin: 0px;
         padding: 0px
       }
+      
+      #content {
+		width: 200px;
+	  }
+      
       #panel {
         position: absolute;
         top: 5px;
@@ -26,6 +32,7 @@
 var geocoder;
 var map;
 var points;
+var currentPoint;
 
 function initialize() {
   geocoder = new google.maps.Geocoder();
@@ -38,24 +45,6 @@ function initialize() {
   map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
   points = new Array();
   
-  var marker = new google.maps.Marker({
-      position: latlng,
-      map: map,
-      title: 'Hello World!'
-  });
-  
-  
-  // setting up a pop up for marker:
-  // http://stackoverflow.com/questions/11467070/how-to-set-a-popup-on-markers-with-google-maps-api
-  var infowindow = new google.maps.InfoWindow({
-		content: 'Hallo thar'
-	  
-	  });
-  
-  google.maps.event.addListener(marker, 'click', function() {
-	  infowindow.open(map, marker);
-  });
-  
 }
 
 function codeAddress() {
@@ -63,25 +52,34 @@ function codeAddress() {
   geocoder.geocode( { 'address': address}, function(results, status) {
     if (status == google.maps.GeocoderStatus.OK) {
       map.setCenter(results[0].geometry.location);
-      var marker = new google.maps.Marker({
+      currentPoint = new google.maps.Marker({
           map: map,
           position: results[0].geometry.location
       });
       
-      var infowindow = new google.maps.InfoWindow({
-		content: 'Hallo thar'
-	  
+      var contentString = '<div id="content">' + 
+      '<p>Do you want to add this pin?' +
+      '<input type="button" value="Yes" onclick="addtoDatabase()"> <input type="button" value="No" onclick="closeInfowindow()">' + 
+      '</div>';
+      
+      currentPoint.infowindow = new google.maps.InfoWindow({
+		content: contentString
 	  });
 	  
-	  google.maps.event.addListener(marker, 'click', function() {
-		infowindow.open(map, marker);
-	});
-      
-      
+	  google.maps.event.addListener(currentPoint, 'click', function() {
+		currentPoint.infowindow.open(map, currentPoint);
+	  });
     } else {
       alert('Geocode was not successful for the following reason: ' + status);
     }
   });
+}
+
+function addtoDatabase() {
+}
+
+function closeInfowindow() {
+	currentPoint.infowindow.close();
 }
 
 google.maps.event.addDomListener(window, 'load', initialize);
