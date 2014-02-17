@@ -1,101 +1,163 @@
+
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
-    <meta charset="utf-8">
-    <title>Art 178: Mission 2</title>
+<head>
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<title>Tutorial: Adding points to the map and saving them in a database</title>
+	<style type="text/css">
+		html { height: 100% }
+		body { height: 100%; margin: 0px; padding: 0px }
+		#map_canvas { height: 100% }
+		/* bootstrap fix */
+		#map_canvas img {
+			max-width: none;
+		}
+	</style> 
 
-    <style>
-      html, body, #map-canvas {
-        height: 100%;
-        margin: 0px;
-        padding: 0px
-      }
-      
-      #content {
-		width: 200px;
-	  }
-      
-      #panel {
-        position: absolute;
-        top: 5px;
-        left: 50%;
-        margin-left: -180px;
-        z-index: 5;
-        background-color: #fff;
-        padding: 5px;
-        border: 1px solid #999;
-      }
-    </style>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
-	<script src="http://code.jquery.com/ui/1.9.2/jquery-ui.js"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
-    <script>
-var geocoder;
+<!-- Google Maps and Places and Drawing API -->
+<script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?libraries=places,drawing&sensor=false"></script>
+
+<!-- jQuery -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+
+<!-- bootstrap -->
+<link rel="stylesheet" type="text/css" href="http://www.yohman.com/students/yoh/bootstrap/css/bootstrap.min.css" />
+<script src="http://www.yohman.com/students/yoh/bootstrap/js/bootstrap.min.js"></script>
+
+<!-- ArcGIS -->
+<script type="text/javascript" src="http://www.yohman.com/scripts/arcgislink.js"></script>
+
+<script type="text/javascript">
+//declare namespace
+var up206b = {};
+
+//declare map
 var map;
-var points;
-var currentPoint;
 
-function initialize() {
-  geocoder = new google.maps.Geocoder();
-  var latlng = new google.maps.LatLng(37.87159, -122.27275);
-  var mapOptions = {
-    zoom: 14,
-    center: latlng
-  }
-  
-  map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
-  points = new Array();
-  
+//set the drawing manager
+var drawingManager;
+
+function trace(message)
+{
+	if (typeof console != 'undefined')
+	{
+		console.log(message);
+	}
 }
+
+//Function that gets run when the document loads
+up206b.initialize = function()
+{
+	var latlng = new google.maps.LatLng(37.87159, -122.27275);
+	var myOptions = {
+		zoom: 14,
+		center: latlng,
+		mapTypeId: google.maps.MapTypeId.ROADMAP,
+		mapTypeControl: false //disable the map type control
+	};
+	map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
 	
-function codeAddress() {
-  var address = document.getElementById('address').value;
-  geocoder.geocode( { 'address': address}, function(results, status) {
-    if (status == google.maps.GeocoderStatus.OK) {
-      map.setCenter(results[0].geometry.location);
-      currentPoint = new google.maps.Marker({
-          map: map,
-          position: results[0].geometry.location
-      });
-      
-      var contentString = '<div id="content">' + 
-      '<p>Do you want to add this pin?' +
-      '<input id="submit" type="button" value="Yes" onclick="loadForm()"> <input type="button" value="No" onclick="closeInfowindow()">' + 
-      '</div>';
-      
-      currentPoint.infowindow = new google.maps.InfoWindow({
-		content: contentString
-	  });
-	  
-	  google.maps.event.addListener(currentPoint, 'click', function() {
-		currentPoint.infowindow.open(map, currentPoint);
-	  });
-    } else {
-      alert('Geocode was not successful for the following reason: ' + status);
-    }
-  });
-}
+	//add the drawing tool that allows users to draw points on the map
+    drawingManager = new google.maps.drawing.DrawingManager({
+        drawingMode: google.maps.drawing.OverlayType.MARKER,
+        drawingControl: true,
+        drawingControlOptions: {
+            position: google.maps.ControlPosition.TOP_CENTER,
+            drawingModes: [google.maps.drawing.OverlayType.MARKER]
+        },
+        markerOptions: {
+            // icon: new google.maps.MarkerImage('bus.png'),
+            draggable: true
+        }
+    });
 
-function loadForm() {
-	$("#content").load("form.html", function() {
-		alert( "Load was called..." );
+    //add the tools to the map
+    drawingManager.setMap(map);
+    
+	//event listener that does the following after user draws point on the map
+	google.maps.event.addListener(drawingManager, 'overlaycomplete', function (point) 
+	{
+		//"clone" the save-form to put in the infowindow
+		var form =	$(".save-form").clone().show();
+		var infowindow_content = form[0];
+		var infowindow = new google.maps.InfoWindow({
+			content: infowindow_content
 		});
-}
 	
-function closeInfowindow() {
-	currentPoint.infowindow.close();
+		//make each marker clickable
+		google.maps.event.addListener(point.overlay, 'click', function() {
+			infowindow.open(map,point.overlay);
+		});
+		
+		//open infowindow by default
+		infowindow.open(map,point.overlay);
+		
+		//when user clicks on the "submit" button
+		form.submit({point: point}, function (event) {
+			//prevent the default form behavior (which would refresh the page)
+			event.preventDefault();
+			
+			//put all form elements in a "data" object
+			var data = {
+				name: $("input[name=name]", this).val(),
+				timeplant: $("input[name=timeplant]", this).val(),
+				timefound: $("input[name=timefound]",this).val(),
+				location: $("input[name=location]", this).val(),
+				lat: event.data.point.overlay.getPosition().lat(),
+				lon: event.data.point.overlay.getPosition().lng()
+			};
+			trace(data)
+			
+			//send the results to the PHP script that adds the point to the database
+			$.post("adddata.php", data, up206b.saveStopResponse, "json");
+
+			//Erase the form and replace with new message
+			infowindow.setContent('Your entry has been added')
+			return false;
+		});
+		
+		form.reset({point: point}, function(event) {
+			event.preventDefault();
+			infowindow.close();
+		});
+	});
+
 }
 
-google.maps.event.addDomListener(window, 'load', initialize);
+up206b.saveStopResponse = function (data) {
+    if (typeof data.error != "undefined")
+    {
+        alert(data.error);
+    }
+    else 
+    {
+        alert(data.message);
+    }
+}
 
-    </script>
-  </head>
-  <body>
-    <div id="panel">
-      <input id="address" type="textbox" value="Kroeber Hall, Berkeley">
-      <input type="button" value="Search" onclick="codeAddress()">
-    </div>
-    <div id="map-canvas"></div>
-  </body>
+</script>
+</head>
+<body onload="up206b.initialize()">
+	<!-- side panel div container -->
+	<!--div style="position:absolute; width:380px; height: 100%; overflow:auto; float:left; padding-left:10px; padding-right:10px;"--> 
+
+<!--
+            This is the form that will show up in the infowindow for
+            each marker created.  The display is set to "none" by default
+        -->
+        <form class="form-horizontal save-form" style="display: none">
+			<h1>Add this location</h1>
+            <fieldset>
+				Name: <input type='text' name='name' /> <br />
+				Time Planted: <input type='datetime-local' name='timeplant' /> <br />
+				Time Found: <input type='datetime-local' name='time' /> <br />
+				Location: <input type='text' name='location' /> <br />
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="submit">Submit</button> <button type="reset" class="btn btn-primary">Cancel</button>
+                </div>
+            </fieldset>
+        </form>
+	<!-- map div container -->
+	<div id="map_canvas" style="height:100%;"></div>
+</body>
 </html>
