@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html>
 <head>
 	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
-	<title>Tutorial: Adding points to the map and saving them in a database</title>
+	<title>Art 178</title>
 	<style type="text/css">
 		html { height: 100% }
 		body { height: 100%; margin: 0px; padding: 0px }
@@ -50,12 +49,25 @@ up206b.initialize = function()
 {
 	var latlng = new google.maps.LatLng(37.87159, -122.27275);
 	var myOptions = {
-		zoom: 14,
+		zoom: 15,
 		center: latlng,
 		mapTypeId: google.maps.MapTypeId.ROADMAP,
 		mapTypeControl: false //disable the map type control
 	};
 	map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+	
+	
+	
+	
+	// using this:
+	// http://stackoverflow.com/questions/7727446/javascript-get-output-from-separate-php-script
+	
+	var markers;
+	$.post("getdata.php", markers, function(data) {
+			markers = data;
+		}, "json").error(function(jqXHR, textStatus, errorThrown) { alert(String(textStatus) + " " + String(errorThrown) + String(jqXHR.responseText)); });
+		
+	trace(markers);
 	
 	//add the drawing tool that allows users to draw points on the map
     drawingManager = new google.maps.drawing.DrawingManager({
@@ -70,6 +82,12 @@ up206b.initialize = function()
             draggable: true
         }
     });
+    
+    
+    
+    
+    
+    
 
     //add the tools to the map
     drawingManager.setMap(map);
@@ -103,37 +121,35 @@ up206b.initialize = function()
 				timeplant: $("input[name=timeplant]", this).val(),
 				timefound: $("input[name=timefound]",this).val(),
 				location: $("input[name=location]", this).val(),
-				lat: event.data.point.overlay.getPosition().lat(),
-				lon: event.data.point.overlay.getPosition().lng()
+				lat: String(event.data.point.overlay.getPosition().lat()),
+				lon: String(event.data.point.overlay.getPosition().lng())
 			};
 			trace(data)
 			
 			//send the results to the PHP script that adds the point to the database
-			$.post("adddata.php", data, up206b.saveStopResponse, "json");
+			$.post("adddata.php", data, up206b.saveStopResponse, "json")//.error(function(jqXHR, textStatus, errorThrown) { alert(String(textStatus) + " " + String(errorThrown) + String(jqXHR.responseText)); });
 
-			//Erase the form and replace with new message
-			infowindow.setContent('Your entry has been added')
+			//Close the infowindow
+			infowindow.close();//setContent('Your entry has been added.')
 			return false;
-		});
-		
-		form.reset({point: point}, function(event) {
-			event.preventDefault();
-			infowindow.close();
 		});
 	});
 
 }
 
 up206b.saveStopResponse = function (data) {
-    if (typeof data.error != "undefined")
-    {
-        alert(data.error);
-    }
-    else 
-    {
-        alert(data.message);
-    }
+
+	if (typeof data.error != "undefined")
+	{
+		alert("ERROR: " + data.error);
+	}
+	else 
+	{
+		alert("Success! " + data.message);
+	}
 }
+
+
 
 </script>
 </head>
@@ -150,10 +166,10 @@ up206b.saveStopResponse = function (data) {
             <fieldset>
 				Name: <input type='text' name='name' /> <br />
 				Time Planted: <input type='datetime-local' name='timeplant' /> <br />
-				Time Found: <input type='datetime-local' name='time' /> <br />
+				Time Found: <input type='datetime-local' name='timefound' /> <br />
 				Location: <input type='text' name='location' /> <br />
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary" id="submit">Submit</button> <button type="reset" class="btn btn-primary">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submit">Submit</button> 
                 </div>
             </fieldset>
         </form>
