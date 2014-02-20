@@ -61,13 +61,36 @@ up206b.initialize = function()
 	
 	// using this:
 	// http://stackoverflow.com/questions/7727446/javascript-get-output-from-separate-php-script
-	
 	var markers;
-	$.post("getdata.php", markers, function(data) {
-			markers = data;
-		}, "json").error(function(jqXHR, textStatus, errorThrown) { alert(String(textStatus) + " " + String(errorThrown) + String(jqXHR.responseText)); });
-		
-	trace(markers);
+	$.ajax({
+		type: "POST",
+		data: markers,
+		url: "getdata.php",
+		dataType: "json",
+		async: false,
+		complete: function(data) {
+			markers = jQuery.parseJSON(data.responseText);
+			//trace(data.responseText);
+			//trace(JSON.stringify(markers));
+			
+			trace(JSON.stringify(markers[0]));
+			
+			//alert(markers.length);
+			
+			markersArray = [];
+			for (var i = 0; i < markers.length; i++) {
+				var newLatlng = new google.maps.LatLng(markers[i].lat, markers[i].lon);
+				trace(markers[i].lon);
+				
+				var newMarker = new google.maps.Marker({
+					position: newLatlng,
+					map: map,
+					title: "testing?"
+				});
+			}
+		}
+	});
+	
 	
 	//add the drawing tool that allows users to draw points on the map
     drawingManager = new google.maps.drawing.DrawingManager({
@@ -155,7 +178,7 @@ up206b.saveStopResponse = function (data) {
 </head>
 <body onload="up206b.initialize()">
 	<!-- side panel div container -->
-	<!--div style="position:absolute; width:380px; height: 100%; overflow:auto; float:left; padding-left:10px; padding-right:10px;"--> 
+	<!--div style="position:absolute; width:380px; height: 100%; overflow:auto; float:left; padding-left:10px; padding-right:10px;" --> 
 
 <!--
             This is the form that will show up in the infowindow for
