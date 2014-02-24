@@ -56,12 +56,11 @@ up206b.initialize = function()
 	};
 	map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
 	
-	
-	
-	
 	// using this:
 	// http://stackoverflow.com/questions/7727446/javascript-get-output-from-separate-php-script
+	
 	var markers;
+	var markersArray = [];
 	$.ajax({
 		type: "POST",
 		data: markers,
@@ -73,23 +72,132 @@ up206b.initialize = function()
 			//trace(data.responseText);
 			//trace(JSON.stringify(markers));
 			
-			trace(JSON.stringify(markers[0]));
+			//trace(JSON.stringify(markers[0]));
 			
 			//alert(markers.length);
 			
-			markersArray = [];
+			infowindow = new google.maps.InfoWindow();
+			
+			
 			for (var i = 0; i < markers.length; i++) {
 				var newLatlng = new google.maps.LatLng(markers[i].lat, markers[i].lon);
-				trace(markers[i].lon);
+				//trace(markers[i].lon);
 				
 				var newMarker = new google.maps.Marker({
 					position: newLatlng,
 					map: map,
-					title: "testing?"
+					title: "Click to view more details"
 				});
+				
+				
+				google.maps.event.addListener(newMarker, 'click', (function(newMarker, i) {
+					return function() {
+						
+						$('#name').html(markers[i].name);
+						$('#timeplant').html(markers[i].timeplant);
+						$('#timefound').html(markers[i].timefound);
+						$('#location').html(markers[i].location);
+						
+						var infowindow_content = '<b>Planted By: </b>' + String(markers[i].name) +
+							'<br><b>Time Planted: </b> ' + String(markers[i].timeplanted) +
+							'<br><b>Time Found: </b> ' + String(markers[i].timefound) + 
+							'<br><b>Location: </b> ' + String(markers[i].location);
+						
+						//alert(infowindow_content);
+						    trace(infowindow_content);
+						
+							infowindow.setContent(infowindow_content);
+							infowindow.open(map, newMarker);
+					}
+				})(newMarker, i));
+				
+				/*
+				google.maps.event.addListener(newMarker, 'click', (function(newMarker, i) {
+					return function() {
+						infowindow.setContent("hi");
+						infowindow.open(map, newMarker);
+					}
+				})(marker, i));*/
+				
 			}
 		}
 	});
+	
+	trace(JSON.stringify(markers));
+	
+	/*
+	var markers;
+	var markersArray = [];
+	var windowsArray = [];
+	
+	$.ajax({
+		type: "POST",
+		data: markers,
+		url: "getdata.php",
+		dataType: "json",
+		async: false,
+		complete: function(data) {
+			markers = jQuery.parseJSON(data.responseText);
+			//trace(data.responseText);
+			//trace(JSON.stringify(markers));
+			
+			//trace(JSON.stringify(markers[0]));
+			
+			//alert(markers.length);
+			
+			for (var i = 0; i < markers.length; i++) {
+				var name = markers[i].name;
+				var timeplant = markers[i].timeplant;
+				var timefound = markers[i].timefound;
+				var location = markers[i].location;
+				
+				var newLatlng = new google.maps.LatLng(markers[i].lat, markers[i].lon);
+				//trace(markers[i].lon);
+				
+				markersArray[i] = new google.maps.Marker({
+					position: newLatlng,
+					map: map,
+					title: "Click to view details"
+				});
+				
+				
+				$('#name').html(markers[i].name);
+				$('#timeplant').html(markers[i].timeplant);
+				$('#timefound').html(markers[i].timefound);
+				$('#location').html(markers[i].location);
+				
+				var infowindow_content = "hello"; //document.getElementById('infowindow-display');
+				windowsArray[i] = new google.maps.InfoWindow();
+				
+				google.maps.event.addListener(markersArray[i], 'click', function () {
+					//infoWindow.setContent(infowindow_content);
+					infoWindow.setContent("hi");
+					infoWindow.open(map, markersArray[i]);
+				
+				});
+			}
+		});*/
+	/*
+	for (var i = 0; i < markers.length; i++) {
+	
+		//windowsArray[i] = new google.maps.InfoWindow();
+		
+		var marker = markersArray[i]
+		
+		
+		windowsArray[i] = new google.maps.InfoWindow({
+			content: infowindow_content
+		});
+		
+		google.maps.event.addListener(marker, 'click', function() {
+			
+			alert("clicked");
+			
+			//windowsArray[i].setContent(infowindow_content);
+			windowsArray[i].open(map, marker);
+			
+		});
+	}*/
 	
 	
 	//add the drawing tool that allows users to draw points on the map
@@ -195,7 +303,15 @@ up206b.saveStopResponse = function (data) {
                     <button type="submit" class="btn btn-primary" id="submit">Submit</button> 
                 </div>
             </fieldset>
-        </form>
+         </form>
+         
+         <div class="infowindow-display" style="display:none">
+			<b>Planted By:</b> <span id="name"></span>
+			<br><b>Time Planted:</b> <span id="timeplant"></span>
+			<br><b>Time Found:</b> <span id="tiemfound"></span>
+			<br><b>Location:</b> <span id="location"></span>
+         
+         </div>
 	<!-- map div container -->
 	<div id="map_canvas" style="height:100%;"></div>
 </body>
